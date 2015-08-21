@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #  Copyright (c) 2012-2015 Red Hat, Inc.
 #  This file is part of libgfapi-python project
 #  (http://review.gluster.org/#/q/project:libgfapi-python)
@@ -15,6 +16,7 @@ import stat
 import errno
 from gluster import api
 from gluster.exceptions import LibgfapiException
+import six
 
 # TODO: Move this utils.py
 python_mode_to_os_flags = {}
@@ -39,12 +41,12 @@ _populate_mode_to_flags_dict()
 
 
 class File(object):
-
-    def __init__(self, fd, path=None, mode=None):
+    def __init__(self, fd, path=None, mode=None, encoding=None):
         self.fd = fd
         self.originalpath = path
         self._mode = mode
         self._closed = False
+        self._encoding = encoding
 
     def __enter__(self):
         if self.fd is None:
@@ -69,6 +71,10 @@ class File(object):
     @property
     def name(self):
         return self.originalpath
+
+    @property
+    def encoding(self):
+        return self._encoding
 
     @property
     def closed(self):
@@ -319,11 +325,25 @@ class File(object):
         rbuf = ctypes.create_string_buffer(size)
         ret = api.glfs_read(self.fd, rbuf, size, 0)
         if ret > 0:
-            # In python 2.x, read() always returns a string. It's really upto
-            # the consumer to decode this string into whatever encoding it was
-            # written with.
-            return rbuf.value[:ret]
+            if self._encoding:
+                return rbuf.value[:ret].decode(self._encoding)
+            else:
+                return rbuf.value[:ret]
         elif ret < 0:
+            err = ctypes.get_errno()
+            raise OSError(err, os.strerror(err))
+
+    def readinto(self, buf):
+        """Read at most len(buf) bytes into bytearray `buf`.
+        """
+
+        size = len(buf)
+        rbuf = ctypes.create_string_buffer(size)
+        ret = api.glfs_read(self.fd, rbuf, size, 0)
+        if ret >= 0:
+            buf[:] = rbuf
+            return ret
+        else:
             err = ctypes.get_errno()
             raise OSError(err, os.strerror(err))
 
@@ -340,7 +360,11 @@ class File(object):
         if type(data) is bytearray:
             buf = (ctypes.c_ubyte * len(data)).from_buffer(data)
         else:
-            buf = data
+            if not self._encoding or type(data) is bytes:
+                buf = data
+            else:
+                buf = data.encode(self._encoding)
+
         ret = api.glfs_write(self.fd, buf, len(buf), flags)
         if ret < 0:
             err = ctypes.get_errno()
@@ -410,7 +434,7 @@ class Volume(object):
             raise LibgfapiException("Host and Volume name should not be None.")
         if proto not in ('tcp', 'rdma'):
             raise LibgfapiException("Invalid protocol specified.")
-        if not isinstance(port, (int, long)):
+        if not isinstance(port, six.integer_types):
             raise LibgfapiException("Invalid port specified.")
 
         self.host = host
@@ -673,7 +697,7 @@ class Volume(object):
             ent = d.next()
             if not isinstance(ent, api.Dirent):
                 break
-            name = ent.d_name[:ent.d_reclen]
+            name = ent.d_name[:ent.d_reclen].decode('utf8')
             if name not in [".", ".."]:
                 dir_list.append(name)
         return dir_list
@@ -731,7 +755,7 @@ class Volume(object):
             raise OSError(err, os.strerror(err))
         return s
 
-    def makedirs(self, name, mode=0777):
+    def makedirs(self, name, mode=0o777):
         """
         Create directories defined in 'name' recursively.
         """
@@ -748,7 +772,7 @@ class Volume(object):
                 return
         self.mkdir(name, mode)
 
-    def mkdir(self, path, mode=0777):
+    def mkdir(self, path, mode=0o777):
         """
         Create a directory
         """
@@ -757,7 +781,7 @@ class Volume(object):
             err = ctypes.get_errno()
             raise OSError(err, os.strerror(err))
 
-    def fopen(self, path, mode='r'):
+    def fopen(self, path, mode='r', encoding=None):
         """
         Similar to Python's built-in File object returned by Python's open()
 
@@ -767,9 +791,11 @@ class Volume(object):
 
         :param path: Path of file to be opened
         :param mode: Mode to open the file with. This is a string.
+        :param encoding: If provided, encode and decode string data in this
+                         encoding
         :returns: an instance of File class
         """
-        if not isinstance(mode, basestring):
+        if not isinstance(mode, six.string_types):
             raise TypeError("Mode must be a string")
         try:
             flags = python_mode_to_os_flags[mode]
@@ -777,15 +803,15 @@ class Volume(object):
             raise ValueError("Invalid mode")
         else:
             if (os.O_CREAT & flags) == os.O_CREAT:
-                fd = api.client.glfs_creat(self.fs, path, flags, 0666)
+                fd = api.client.glfs_creat(self.fs, path.encode(), flags, 0o666)
             else:
-                fd = api.client.glfs_open(self.fs, path, flags)
+                fd = api.client.glfs_open(self.fs, path.encode(), flags)
             if not fd:
                 err = ctypes.get_errno()
                 raise OSError(err, os.strerror(err))
-            return File(fd, path=path, mode=mode)
+            return File(fd, path=path, mode=mode, encoding=encoding)
 
-    def open(self, path, flags, mode=0777):
+    def open(self, path, flags, mode=0o777):
         """
         Similar to Python's os.open()
 
@@ -806,9 +832,9 @@ class Volume(object):
             # FIXME:
             # Without direct call to _api the functest fails on creat and open.
 
-            fd = api.client.glfs_creat(self.fs, path, flags, mode)
+            fd = api.client.glfs_creat(self.fs, path.encode(), flags, mode)
         else:
-            fd = api.client.glfs_open(self.fs, path, flags)
+            fd = api.client.glfs_open(self.fs, path.encode(), flags)
         if not fd:
             err = ctypes.get_errno()
             raise OSError(err, os.strerror(err))

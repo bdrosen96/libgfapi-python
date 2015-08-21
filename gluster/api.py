@@ -102,6 +102,16 @@ class Dirent (ctypes.Structure):
     ]
 
 
+# Python 3 strings has to be encoded explicitly
+class StringType(object):
+    @classmethod
+    def from_param(cls, value):
+        if isinstance(cls, bytes) or value is None:
+            return value
+        else:
+            return value.encode('ascii')
+
+
 # Here is the reference card of libgfapi library exported
 # apis with its different versions.
 #
@@ -251,21 +261,21 @@ glfs_init = ctypes.CFUNCTYPE(
 
 glfs_statvfs = ctypes.CFUNCTYPE(ctypes.c_int,
                                 ctypes.c_void_p,
-                                ctypes.c_char_p,
+                                StringType,
                                 ctypes.c_void_p)(('glfs_statvfs', client))
 
 glfs_new = ctypes.CFUNCTYPE(
-    ctypes.c_void_p, ctypes.c_char_p)(('glfs_new', client))
+    ctypes.c_void_p, StringType)(('glfs_new', client))
 
 glfs_set_volfile_server = ctypes.CFUNCTYPE(ctypes.c_int,
                                            ctypes.c_void_p,
-                                           ctypes.c_char_p,
-                                           ctypes.c_char_p,
+                                           StringType,
+                                           StringType,
                                            ctypes.c_int)(('glfs_set_volfile_server', client))  # noqa
 
 glfs_set_logging = ctypes.CFUNCTYPE(ctypes.c_int,
                                     ctypes.c_void_p,
-                                    ctypes.c_char_p,
+                                    StringType,
                                     ctypes.c_int)(('glfs_set_logging', client))
 
 glfs_fini = ctypes.CFUNCTYPE(
@@ -275,10 +285,10 @@ glfs_fini = ctypes.CFUNCTYPE(
 glfs_close = ctypes.CFUNCTYPE(
     ctypes.c_int, ctypes.c_void_p)(('glfs_close', client))
 
-glfs_lstat = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_char_p,
+glfs_lstat = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, StringType,
                               ctypes.POINTER(Stat))(('glfs_lstat', client))
 
-glfs_stat = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_char_p,
+glfs_stat = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, StringType,
                              ctypes.POINTER(Stat))(('glfs_stat', client))
 
 glfs_fstat = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.POINTER(
@@ -286,7 +296,7 @@ glfs_fstat = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.POINTER(
 
 glfs_chmod = ctypes.CFUNCTYPE(ctypes.c_int,
                               ctypes.c_void_p,
-                              ctypes.c_char_p,
+                              StringType,
                               ctypes.c_ushort)(('glfs_chmod', client))
 
 glfs_fchmod = ctypes.CFUNCTYPE(ctypes.c_int,
@@ -295,13 +305,13 @@ glfs_fchmod = ctypes.CFUNCTYPE(ctypes.c_int,
 
 glfs_chown = ctypes.CFUNCTYPE(ctypes.c_int,
                               ctypes.c_void_p,
-                              ctypes.c_char_p,
+                              StringType,
                               ctypes.c_uint,
                               ctypes.c_uint)(('glfs_chown', client))
 
 glfs_lchown = ctypes.CFUNCTYPE(ctypes.c_int,
                                ctypes.c_void_p,
-                               ctypes.c_char_p,
+                               StringType,
                                ctypes.c_uint,
                                ctypes.c_uint)(('glfs_lchown', client))
 
@@ -334,42 +344,42 @@ glfs_write = ctypes.CFUNCTYPE(ctypes.c_ssize_t,
 
 glfs_getxattr = ctypes.CFUNCTYPE(ctypes.c_ssize_t,
                                  ctypes.c_void_p,
-                                 ctypes.c_char_p,
-                                 ctypes.c_char_p,
+                                 StringType,
+                                 StringType,
                                  ctypes.c_void_p,
                                  ctypes.c_size_t)(('glfs_getxattr', client))
 
 glfs_listxattr = ctypes.CFUNCTYPE(ctypes.c_ssize_t,
                                   ctypes.c_void_p,
-                                  ctypes.c_char_p,
+                                  StringType,
                                   ctypes.c_void_p,
                                   ctypes.c_size_t)(('glfs_listxattr', client))
 
 glfs_removexattr = ctypes.CFUNCTYPE(ctypes.c_int,
                                     ctypes.c_void_p,
-                                    ctypes.c_char_p,
-                                    ctypes.c_char_p)(('glfs_removexattr', client))  # noqa
+                                    StringType,
+                                    StringType)(('glfs_removexattr', client))  # noqa
 
 glfs_setxattr = ctypes.CFUNCTYPE(ctypes.c_int,
                                  ctypes.c_void_p,
-                                 ctypes.c_char_p,
-                                 ctypes.c_char_p,
+                                 StringType,
+                                 StringType,
                                  ctypes.c_void_p,
                                  ctypes.c_size_t,
                                  ctypes.c_int)(('glfs_setxattr', client))
 
 glfs_rename = ctypes.CFUNCTYPE(ctypes.c_int,
                                ctypes.c_void_p,
-                               ctypes.c_char_p,
-                               ctypes.c_char_p)(('glfs_rename', client))
+                               StringType,
+                               StringType)(('glfs_rename', client))
 
 glfs_symlink = ctypes.CFUNCTYPE(ctypes.c_int,
                                 ctypes.c_void_p,
-                                ctypes.c_char_p,
-                                ctypes.c_char_p)(('glfs_symlink', client))
+                                StringType,
+                                StringType)(('glfs_symlink', client))
 
 glfs_unlink = ctypes.CFUNCTYPE(
-    ctypes.c_int, ctypes.c_void_p, ctypes.c_char_p)(('glfs_unlink', client))
+    ctypes.c_int, ctypes.c_void_p, StringType)(('glfs_unlink', client))
 
 glfs_readdir_r = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p,
                                   ctypes.POINTER(Dirent),
@@ -379,16 +389,16 @@ glfs_closedir = ctypes.CFUNCTYPE(
     ctypes.c_int, ctypes.c_void_p)(('glfs_closedir', client))
 
 
-glfs_mkdir = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_char_p,
+glfs_mkdir = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, StringType,
                               ctypes.c_ushort)(('glfs_mkdir', client))
 
 glfs_opendir = ctypes.CFUNCTYPE(ctypes.c_void_p,
                                 ctypes.c_void_p,
-                                ctypes.c_char_p)(('glfs_opendir', client))
+                                StringType)(('glfs_opendir', client))
 
 glfs_rmdir = ctypes.CFUNCTYPE(ctypes.c_int,
                               ctypes.c_void_p,
-                              ctypes.c_char_p)(('glfs_rmdir', client))
+                              StringType)(('glfs_rmdir', client))
 
 glfs_setfsuid = ctypes.CFUNCTYPE(ctypes.c_int,
                                  ctypes.c_uint)(('glfs_setfsuid', client))
@@ -401,18 +411,18 @@ glfs_ftruncate = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p,
 
 glfs_fgetxattr = ctypes.CFUNCTYPE(ctypes.c_ssize_t,
                                   ctypes.c_void_p,
-                                  ctypes.c_char_p,
+                                  StringType,
                                   ctypes.c_void_p,
                                   ctypes.c_size_t)(('glfs_fgetxattr', client))
 
 glfs_fremovexattr = ctypes.CFUNCTYPE(ctypes.c_int,
                                      ctypes.c_void_p,
-                                     ctypes.c_char_p)(('glfs_fremovexattr',
+                                     StringType)(('glfs_fremovexattr',
                                                       client))
 
 glfs_fsetxattr = ctypes.CFUNCTYPE(ctypes.c_int,
                                   ctypes.c_void_p,
-                                  ctypes.c_char_p,
+                                  StringType,
                                   ctypes.c_void_p,
                                   ctypes.c_size_t,
                                   ctypes.c_int)(('glfs_fsetxattr', client))
@@ -425,22 +435,22 @@ glfs_flistxattr = ctypes.CFUNCTYPE(ctypes.c_ssize_t,
 
 glfs_access = ctypes.CFUNCTYPE(ctypes.c_int,
                                ctypes.c_void_p,
-                               ctypes.c_char_p,
+                               StringType,
                                ctypes.c_int)(('glfs_access', client))
 
 glfs_readlink = ctypes.CFUNCTYPE(ctypes.c_int,
                                  ctypes.c_void_p,
-                                 ctypes.c_char_p,
-                                 ctypes.c_char_p,
+                                 StringType,
+                                 StringType,
                                  ctypes.c_size_t)(('glfs_readlink', client))
 
 glfs_chdir = ctypes.CFUNCTYPE(ctypes.c_int,
                               ctypes.c_void_p,
-                              ctypes.c_char_p)(('glfs_chdir', client))
+                              StringType)(('glfs_chdir', client))
 
 glfs_getcwd = ctypes.CFUNCTYPE(ctypes.c_char_p,
                                ctypes.c_void_p,
-                               ctypes.c_char_p,
+                               StringType,
                                ctypes.c_size_t)(('glfs_getcwd', client))
 
 

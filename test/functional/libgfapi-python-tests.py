@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #  Copyright (c) 2012-2015 Red Hat, Inc.
 #  This file is part of libgfapi-python project
 #  (http://review.gluster.org/#/q/project:libgfapi-python)
@@ -17,8 +18,9 @@ import errno
 from gluster.gfapi import File, Volume
 from gluster.exceptions import LibgfapiException
 from test import get_test_config
-from ConfigParser import NoSectionError, NoOptionError
+from six.moves.configparser import NoSectionError, NoOptionError
 from uuid import uuid4
+from six.moves import range
 
 config = get_test_config()
 if config:
@@ -60,7 +62,7 @@ class BinFileOpsTest(unittest.TestCase):
         payload = bytearray(data, "ascii")
         path = self._testMethodName + ".io"
         with File(self.vol.open(path,
-                  os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0644)) as f:
+                  os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0o644)) as f:
             f.write(payload)
         # Read binary data
         with File(self.vol.open(path, os.O_RDONLY)) as f:
@@ -92,7 +94,7 @@ class FileOpsTest(unittest.TestCase):
         self.data = "gluster is awesome"
         self.path = self._testMethodName + ".io"
         with File(self.vol.open(self.path,
-                  os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0644),
+                  os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0o644),
                   path=self.path) as f:
             rc = f.write(self.data)
             self.assertEqual(rc, len(self.data))
@@ -107,7 +109,7 @@ class FileOpsTest(unittest.TestCase):
         with File(self.vol.open(self.path, os.O_RDONLY)) as f:
             self.assertTrue(isinstance(f, File))
             buf = f.read(len(self.data))
-            self.assertFalse(isinstance(buf, types.IntType))
+            self.assertFalse(isinstance(buf, int))
             self.assertEqual(buf, self.data)
 
     def test_open_file_not_exist(self):
@@ -140,8 +142,8 @@ class FileOpsTest(unittest.TestCase):
         data = "Gluster is so awesome"
         with self.vol.fopen(name, 'w') as f:
             f.write(data)
-        perms = self.vol.stat(name).st_mode & 0777
-        self.assertEqual(perms, int(0666))
+        perms = self.vol.stat(name).st_mode & 0o777
+        self.assertEqual(perms, int(0o666))
 
         # 'r': Open file for reading.
         # If not specified, mode should default to 'r'
@@ -233,11 +235,11 @@ class FileOpsTest(unittest.TestCase):
 
     def test_chmod(self):
         stat = self.vol.stat(self.path)
-        orig_mode = oct(stat.st_mode & 0777)
+        orig_mode = oct(stat.st_mode & 0o777)
         self.assertEqual(orig_mode, '0644L')
-        self.vol.chmod(self.path, 0600)
+        self.vol.chmod(self.path, 0o600)
         stat = self.vol.stat(self.path)
-        new_mode = oct(stat.st_mode & 0777)
+        new_mode = oct(stat.st_mode & 0o777)
         self.assertEqual(new_mode, '0600L')
 
     def test_exists(self):
@@ -272,7 +274,7 @@ class FileOpsTest(unittest.TestCase):
 
     def test_lstat(self):
         sb = self.vol.lstat(self.path)
-        self.assertFalse(isinstance(sb, types.IntType))
+        self.assertFalse(isinstance(sb, int))
         self.assertEqual(sb.st_size, len(self.data))
 
     def test_rename(self):
@@ -282,7 +284,7 @@ class FileOpsTest(unittest.TestCase):
 
     def test_stat(self):
         sb = self.vol.stat(self.path)
-        self.assertFalse(isinstance(sb, types.IntType))
+        self.assertFalse(isinstance(sb, int))
         self.assertEqual(sb.st_size, len(self.data))
 
     def test_unlink(self):
@@ -495,11 +497,11 @@ class DirOpsTest(unittest.TestCase):
     def setUp(self):
         self.data = "gluster is awesome"
         self.dir_path = self._testMethodName + "_dir"
-        self.vol.mkdir(self.dir_path, 0755)
+        self.vol.mkdir(self.dir_path, 0o755)
         for x in range(0, 3):
             f = os.path.join(self.dir_path, self.testfile + str(x))
             with File(self.vol.open(f, os.O_CREAT | os.O_WRONLY | os.O_EXCL,
-                      0644)) as f:
+                      0o644)) as f:
                 rc = f.write(self.data)
                 self.assertEqual(rc, len(self.data))
                 f.fdatasync()
@@ -523,16 +525,16 @@ class DirOpsTest(unittest.TestCase):
 
     def test_makedirs(self):
         name = self.dir_path + "/subd1/subd2/subd3"
-        self.vol.makedirs(name, 0755)
+        self.vol.makedirs(name, 0o755)
         self.assertTrue(self.vol.isdir(name))
 
     def test_statvfs(self):
         sb = self.vol.statvfs("/")
-        self.assertFalse(isinstance(sb, types.IntType))
-        self.assertEqual(sb.f_namemax, 255L)
+        self.assertFalse(isinstance(sb, int))
+        self.assertEqual(sb.f_namemax, 255)
         # creating a dir, checking Total number of free inodes
         # is reduced
-        self.vol.makedirs("statvfs_dir1", 0755)
+        self.vol.makedirs("statvfs_dir1", 0o755)
         sb2 = self.vol.statvfs("/")
         self.assertTrue(sb2.f_ffree < sb.f_ffree)
 

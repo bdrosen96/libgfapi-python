@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # Copyright (c) 2012-2014 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import ConfigParser
+import six.moves.configparser
 
 
 def get_test_config():
@@ -26,7 +27,7 @@ def get_test_config():
     dirname = os.path.dirname(__file__)
     conf_file = dirname + "/test.conf"
     if os.path.exists(conf_file):
-        config = ConfigParser.ConfigParser()
+        config = six.moves.configparser.ConfigParser()
         config.read(conf_file)
         return config
     return None
