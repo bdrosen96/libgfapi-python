@@ -11,6 +11,7 @@
 
 import ctypes
 from ctypes.util import find_library
+from ctypes import sizeof
 
 
 # LD_LIBRARY_PATH is not looked up by ctypes.util.find_library()
@@ -40,6 +41,18 @@ try:
 except OSError:
     raise ImportError("ctypes.CDLL() cannot load {0}. You might want to set "
                       "LD_LIBRARY_PATH env variable".format(so_file_name))
+
+# c_ssize_t was only added in py27. Manually backporting it here for py26
+try:
+    import ctypes.c_ssize_t
+except ImportError:
+    if sizeof(ctypes.c_uint) == sizeof(ctypes.c_void_p):
+        setattr(ctypes, 'c_ssize_t', ctypes.c_int)
+    elif sizeof(ctypes.c_ulong) == sizeof(ctypes.c_void_p):
+        setattr(ctypes, 'c_ssize_t', ctypes.c_long)
+    elif sizeof(ctypes.c_ulonglong) == sizeof(ctypes.c_void_p):
+        setattr(ctypes, 'c_ssize_t', ctypes.c_longlong)
+
 
 # Wow, the Linux kernel folks really play nasty games with this structure.  If
 # you look at the man page for stat(2) and then at this definition you'll note
@@ -281,6 +294,18 @@ glfs_set_logging = ctypes.CFUNCTYPE(ctypes.c_int,
 glfs_fini = ctypes.CFUNCTYPE(
     ctypes.c_int, ctypes.c_void_p)(('glfs_fini', client))
 
+glfs_creat = ctypes.CFUNCTYPE(ctypes.c_void_p,
+                              ctypes.c_void_p,
+                              ctypes.c_char_p,
+                              ctypes.c_int,
+                              ctypes.c_uint,
+                              use_errno=True)(('glfs_creat', client))
+
+glfs_open = ctypes.CFUNCTYPE(ctypes.c_void_p,
+                             ctypes.c_void_p,
+                             ctypes.c_char_p,
+                             ctypes.c_int,
+                             use_errno=True)(('glfs_open', client))
 
 glfs_close = ctypes.CFUNCTYPE(
     ctypes.c_int, ctypes.c_void_p)(('glfs_close', client))
@@ -454,12 +479,6 @@ glfs_getcwd = ctypes.CFUNCTYPE(ctypes.c_char_p,
                                ctypes.c_size_t)(('glfs_getcwd', client))
 
 
-# TODO: creat and open fails on test_create_file_already_exists & test_open_file_not_exist functional testing, # noqa
-# when defined via function prototype.. Need to find RCA. For time being, using it from 'api.glfs_' # noqa
-#_glfs_creat = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_uint) # noqa
-                              # (('glfs_creat', client)) # noqa
-#_glfs_open = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int) # noqa
-#                               (('glfs_open', client)) # noqa
 # TODO: # discard and fallocate fails with "AttributeError: /lib64/libgfapi.so.0: undefined symbol: glfs_discard", # noqa
 #  for time being, using it from api.* # noqa
 # glfs_discard = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_size_t)(('glfs_discard', client)) # noqa

@@ -442,7 +442,7 @@ class TestVolume(unittest.TestCase):
         mock_glfs_creat = Mock()
         mock_glfs_creat.return_value = 2
 
-        with patch("gluster.api.client.glfs_creat", mock_glfs_creat):
+        with patch("gluster.api.glfs_creat", mock_glfs_creat):
             with File(self.vol.open("file.txt", os.O_CREAT, 0o644)) as f:
                 self.assertTrue(isinstance(f, File))
                 self.assertEqual(mock_glfs_creat.call_count, 1)
@@ -718,7 +718,7 @@ class TestVolume(unittest.TestCase):
         mock_glfs_open = Mock()
         mock_glfs_open.return_value = 2
 
-        with patch("gluster.api.client.glfs_open", mock_glfs_open):
+        with patch("gluster.api.glfs_open", mock_glfs_open):
             with File(self.vol.open("file.txt", os.O_WRONLY)) as f:
                 self.assertTrue(isinstance(f, File))
                 self.assertEqual(mock_glfs_open.call_count, 1)
@@ -733,14 +733,14 @@ class TestVolume(unittest.TestCase):
             with self.vol.open("file.txt", os.O_WRONLY) as fd:
                 self.assertEqual(fd, None)
 
-        with patch("gluster.api.client.glfs_open", mock_glfs_open):
+        with patch("gluster.api.glfs_open", mock_glfs_open):
             self.assertRaises(OSError, assert_open)
 
     def test_open_direct_success(self):
         mock_glfs_open = Mock()
         mock_glfs_open.return_value = 2
 
-        with patch("gluster.api.client.glfs_open", mock_glfs_open):
+        with patch("gluster.api.glfs_open", mock_glfs_open):
             f = File(self.vol.open("file.txt", os.O_WRONLY))
             self.assertTrue(isinstance(f, File))
             self.assertEqual(mock_glfs_open.call_count, 1)
@@ -751,7 +751,7 @@ class TestVolume(unittest.TestCase):
         mock_glfs_open = Mock()
         mock_glfs_open.return_value = None
 
-        with patch("gluster.api.client.glfs_open", mock_glfs_open):
+        with patch("gluster.api.glfs_open", mock_glfs_open):
             self.assertRaises(OSError, self.vol.open, "file.txt", os.O_RDONLY)
 
     def test_opendir_success(self):
