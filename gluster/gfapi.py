@@ -730,12 +730,12 @@ class Volume(object):
         # buffer" format.
         i = 0
         while i < rc:
-            new_xa = buf.raw[i]
+            new_xa = buf[i]
             i += 1
             while i < rc:
-                next_char = buf.raw[i]
+                next_char = buf[i]
                 i += 1
-                if next_char == '\0':
+                if next_char == b'\x00':
                     xattrs.append(new_xa)
                     break
                 new_xa += next_char

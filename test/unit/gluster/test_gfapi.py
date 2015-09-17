@@ -15,14 +15,23 @@ import gluster
 import os
 import stat
 import errno
+import contextlib
 
-from gluster.gfapi import File, Dir, Volume
+from gluster.gfapi import File, Dir, Volume, api as gfapi_api
 from gluster import api
 from gluster.exceptions import LibgfapiException
 from nose import SkipTest
 from mock import Mock, patch
-from contextlib import nested
 from six.moves import range
+from six import PY3
+
+if PY3:
+    @contextlib.contextmanager
+    def nested(*contexts):
+        with contextlib.ExitStack() as stack:
+            yield [stack.enter_context(c) for c in contexts]
+else:
+    nested = contextlib.nested
 
 
 def _mock_glfs_close(fd):
@@ -138,9 +147,8 @@ class TestFile(unittest.TestCase):
             self.assertRaises(OSError, self.fd.fstat)
 
     def test_fsync_success(self):
-        mock_glfs_fsync = Mock()
 
-        with patch("gluster.gfapi.api.glfs_fsync", mock_glfs_fsync):
+        with patch.object(gfapi_api, "glfs_fsync", return_value=0, create=True):
             self.fd.fsync()
 
     def test_fsync_fail_exception(self):
@@ -160,12 +168,12 @@ class TestFile(unittest.TestCase):
 
     def test_read_success(self):
         def _mock_glfs_read(fd, rbuf, buflen, flags):
-            rbuf.value = "hello"
+            rbuf.value = b"hello"
             return 5
 
         with patch("gluster.gfapi.api.glfs_read", _mock_glfs_read):
             b = self.fd.read(5)
-            self.assertEqual(b, "hello")
+            self.assertEqual(b, b"hello")
 
     def test_read_fail_exception(self):
         mock_glfs_read = Mock()
@@ -392,11 +400,10 @@ class TestVolume(unittest.TestCase):
             self.assertTrue(v.mounted)
 
     def test_set_logging(self):
-        _m_set_logging = Mock()
 
         # Called after mount()
         v = Volume("host", "vol")
-        with patch("gluster.gfapi.api.glfs_set_logging", _m_set_logging):
+        with patch.object(gfapi_api, "glfs_set_logging", return_value=0, create=True):
             v.mount()
             v.set_logging("/path/whatever", 7)
             self.assertEqual(v.log_file, "/path/whatever")
@@ -447,7 +454,7 @@ class TestVolume(unittest.TestCase):
                 self.assertTrue(isinstance(f, File))
                 self.assertEqual(mock_glfs_creat.call_count, 1)
                 mock_glfs_creat.assert_called_once_with(12345,
-                                                        "file.txt",
+                                                        b"file.txt",
                                                         os.O_CREAT, 0o644)
 
     def test_exists_true(self):
@@ -552,12 +559,12 @@ class TestVolume(unittest.TestCase):
 
     def test_getxattr_success(self):
         def mock_glfs_getxattr(fs, path, key, buf, maxlen):
-            buf.value = "fake_xattr"
+            buf.value = b"fake_xattr"
             return 10
 
         with patch("gluster.gfapi.api.glfs_getxattr", mock_glfs_getxattr):
             buf = self.vol.getxattr("file.txt", "key1", 32)
-            self.assertEquals("fake_xattr", buf)
+            self.assertEquals(b"fake_xattr", buf)
 
     def test_getxattr_fail_exception(self):
         mock_glfs_getxattr = Mock()
@@ -572,13 +579,13 @@ class TestVolume(unittest.TestCase):
         mock_glfs_opendir.return_value = 2
 
         dirent1 = api.Dirent()
-        dirent1.d_name = "mockfile"
+        dirent1.d_name = b"mockfile"
         dirent1.d_reclen = 8
         dirent2 = api.Dirent()
-        dirent2.d_name = "mockdir"
+        dirent2.d_name = b"mockdir"
         dirent2.d_reclen = 7
         dirent3 = api.Dirent()
-        dirent3.d_name = "."
+        dirent3.d_name = b"."
         dirent3.d_reclen = 1
         mock_Dir_next = Mock()
         mock_Dir_next.side_effect = [dirent1, dirent2, dirent3, None]
@@ -600,13 +607,13 @@ class TestVolume(unittest.TestCase):
     def test_listxattr_success(self):
         def mock_glfs_listxattr(fs, path, buf, buflen):
             if buf:
-                buf.raw = "key1\0key2\0"
+                buf.raw = b"key1\0key2\0"
             return 10
 
         with patch("gluster.gfapi.api.glfs_listxattr", mock_glfs_listxattr):
             xattrs = self.vol.listxattr("file.txt")
-            self.assertTrue("key1" in xattrs)
-            self.assertTrue("key2" in xattrs)
+            self.assertTrue(b"key1" in xattrs)
+            self.assertTrue(b"key2" in xattrs)
 
     def test_listxattr_fail_exception(self):
         mock_glfs_listxattr = Mock()
@@ -723,7 +730,7 @@ class TestVolume(unittest.TestCase):
                 self.assertTrue(isinstance(f, File))
                 self.assertEqual(mock_glfs_open.call_count, 1)
                 mock_glfs_open.assert_called_once_with(12345,
-                                                       "file.txt", os.O_WRONLY)
+                                                       b"file.txt", os.O_WRONLY)
 
     def test_open_with_statement_fail_exception(self):
         mock_glfs_open = Mock()
@@ -744,7 +751,7 @@ class TestVolume(unittest.TestCase):
             f = File(self.vol.open("file.txt", os.O_WRONLY))
             self.assertTrue(isinstance(f, File))
             self.assertEqual(mock_glfs_open.call_count, 1)
-            mock_glfs_open.assert_called_once_with(12345, "file.txt",
+            mock_glfs_open.assert_called_once_with(12345, b"file.txt",
                                                    os.O_WRONLY)
 
     def test_open_direct_fail_exception(self):
