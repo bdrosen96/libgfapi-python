@@ -443,7 +443,7 @@ glfs_fgetxattr = ctypes.CFUNCTYPE(ctypes.c_ssize_t,
 glfs_fremovexattr = ctypes.CFUNCTYPE(ctypes.c_int,
                                      ctypes.c_void_p,
                                      StringType)(('glfs_fremovexattr',
-                                                      client))
+                                                  client))
 
 glfs_fsetxattr = ctypes.CFUNCTYPE(ctypes.c_int,
                                   ctypes.c_void_p,
@@ -486,8 +486,8 @@ glfs_getcwd = ctypes.CFUNCTYPE(ctypes.c_char_p,
 #                                   (('glfs_fallocate', client)) # noqa
 
 
-glfs_creat = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_uint)(('glfs_creat', client)) # noqa
-glfs_open = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int)(('glfs_open', client)) # noqa
+glfs_creat = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_uint)(('glfs_creat', client))  # noqa
+glfs_open = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int)(('glfs_open', client))  # noqa
 
-glfs_discard = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_size_t)(('glfs_discard', client)) # noqa
-glfs_fallocate = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_int, ctypes.c_ulong, ctypes.c_size_t)(('glfs_fallocate', client)) # noqa
+glfs_discard = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_size_t)(('glfs_discard', client))  # noqa
+glfs_fallocate = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_int, ctypes.c_ulong, ctypes.c_size_t)(('glfs_fallocate', client))  # noqa
