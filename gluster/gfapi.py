@@ -810,9 +810,9 @@ class Volume(object):
             raise ValueError("Invalid mode")
         else:
             if (os.O_CREAT & flags) == os.O_CREAT:
-                fd = api.glfs_creat(self.fs, path.encode(), flags, 0o666)
+                fd = api.glfs_creat(self.fs, path, flags, 0o666)
             else:
-                fd = api.glfs_open(self.fs, path.encode(), flags)
+                fd = api.glfs_open(self.fs, path, flags)
             if not fd:
                 err = ctypes.get_errno()
                 raise OSError(err, os.strerror(err))
@@ -839,9 +839,9 @@ class Volume(object):
             # FIXME:
             # Without direct call to _api the functest fails on creat and open.
 
-            fd = api.glfs_creat(self.fs, path.encode(), flags, mode)
+            fd = api.glfs_creat(self.fs, path, flags, mode)
         else:
-            fd = api.glfs_open(self.fs, path.encode(), flags)
+            fd = api.glfs_open(self.fs, path, flags)
         if not fd:
             err = ctypes.get_errno()
             raise OSError(err, os.strerror(err))
